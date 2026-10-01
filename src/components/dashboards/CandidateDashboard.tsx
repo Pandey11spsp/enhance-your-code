@@ -44,8 +44,8 @@ export function CandidateDashboard() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Applications" value={apps.length} />
         <StatCard label="Active" value={active} />
-        <StatCard label="Interviews" value={(stages.interview_scheduled ?? 0) + (stages.interviewing ?? 0)} />
-        <StatCard label="Offers" value={(stages.offer ?? 0) + (stages.hired ?? 0)} />
+        <StatCard label="Interviews" value={(stages["interview_scheduled"] ?? 0) + (stages["interviewing"] ?? 0)} />
+        <StatCard label="Offers" value={(stages["offer"] ?? 0) + (stages["hired"] ?? 0)} />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="rounded-xl border bg-card p-6 lg:col-span-2">

@@ -76,8 +76,8 @@ export function RecruiterDashboard() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Active jobs" value={d.jobs.filter((j) => j.status === "published").length} />
         <StatCard label="Applications" value={d.apps.length} />
-        <StatCard label="In interview" value={(stages.interview_scheduled ?? 0) + (stages.interviewing ?? 0)} />
-        <StatCard label="Hired" value={stages.hired ?? 0} />
+        <StatCard label="In interview" value={(stages["interview_scheduled"] ?? 0) + (stages["interviewing"] ?? 0)} />
+        <StatCard label="Hired" value={stages["hired"] ?? 0} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border bg-card p-6">
@@ -158,7 +158,7 @@ function NewJobDialog({ uid, onDone }: { uid: string; onDone: () => void }) {
       vacancies: num("vacancies") ?? 1,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Job published");
     setOpen(false);
     onDone();
