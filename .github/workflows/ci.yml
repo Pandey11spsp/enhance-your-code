@@ -20,17 +20,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------------------------------
-      # Checkout source code
-      # -----------------------------------------------------
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
-
-      # -----------------------------------------------------
-      # Setup Node.js
-      # -----------------------------------------------------
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,35 +29,14 @@ jobs:
           node-version: 22
           cache: npm
 
-
-      # -----------------------------------------------------
-      # Install dependencies
-      # -----------------------------------------------------
-
       - name: Install dependencies
         run: npm ci
-
-
-      # -----------------------------------------------------
-      # Build application
-      # -----------------------------------------------------
 
       - name: Build application
         run: npm run build
 
-
-      # -----------------------------------------------------
-      # Setup Docker Buildx
-      # -----------------------------------------------------
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-
-      # -----------------------------------------------------
-      # Login to GitHub Container Registry
-      # Only required when pushing from main
-      # -----------------------------------------------------
 
       - name: Login to GHCR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -76,16 +46,57 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
-      # -----------------------------------------------------
-      # Build Docker image
-      # -----------------------------------------------------
-
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: false
+          load: true
+          no-cache: true
+          tags: |
+            enhance-your-code:test
+
+      - name: Verify production server
+        run: |
+          echo "=== CLOUDFLARE CHECK ==="
+
+          if docker run --rm enhance-your-code:test \
+            sh -c "grep -i 'cloudflare-module\|cloudflare_module_default' .output/server/index.mjs"
+          then
+            echo "ERROR: Cloudflare runtime detected."
+            exit 1
+          else
+            echo "NO CLOUDFLARE REFERENCES FOUND"
+          fi
+
+          echo "=== NODE SERVER CHECK ==="
+
+          docker run -d \
+            --name enhance-your-code-ci-test \
+            -p 3000:3000 \
+            enhance-your-code:test \
+            node .output/server/index.mjs
+
+          sleep 5
+
+          if docker ps --format '{{.Names}}' | grep -q '^enhance-your-code-ci-test$'
+          then
+            echo "NODE SERVER STARTED SUCCESSFULLY"
+            docker rm -f enhance-your-code-ci-test
+          else
+            echo "ERROR: Node server failed to stay running."
+            docker logs enhance-your-code-ci-test || true
+            docker rm -f enhance-your-code-ci-test || true
+            exit 1
+          fi
+
+      - name: Push Docker image to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          no-cache: true
           tags: |
             ghcr.io/pandey11spsp/enhance-your-code:latest
             ghcr.io/pandey11spsp/enhance-your-code:${{ github.sha }}
