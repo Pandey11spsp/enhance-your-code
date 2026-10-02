@@ -30,12 +30,12 @@ WORKDIR /app
 # Production environment
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=8080
+ENV PORT=3000
 
 # Copy the generated production application
 COPY --from=builder /app/.output ./.output
 
-# TanStack Start / Nitro server
-EXPOSE 8080
+# TanStack Start / Nitro Node.js server
+EXPOSE 3000
 
 CMD ["node", ".output/server/index.mjs"]
