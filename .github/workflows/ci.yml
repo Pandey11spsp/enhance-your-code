@@ -71,9 +71,24 @@ jobs:
 
           echo "=== NODE SERVER CHECK ==="
 
-          timeout 10 docker run --rm \
+          docker run -d \
+            --name enhance-your-code-ci-test \
+            -p 3000:3000 \
             enhance-your-code:test \
             node .output/server/index.mjs
+
+          sleep 5
+
+          if docker ps --format '{{.Names}}' | grep -q '^enhance-your-code-ci-test$'
+          then
+            echo "NODE SERVER STARTED SUCCESSFULLY"
+            docker rm -f enhance-your-code-ci-test
+          else
+            echo "ERROR: Node server failed to stay running."
+            docker logs enhance-your-code-ci-test || true
+            docker rm -f enhance-your-code-ci-test || true
+            exit 1
+          fi
 
       - name: Push Docker image to GHCR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
