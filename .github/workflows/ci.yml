@@ -86,6 +86,25 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          no-cache: true
           tags: |
             ghcr.io/pandey11spsp/enhance-your-code:latest
             ghcr.io/pandey11spsp/enhance-your-code:${{ github.sha }}
+
+
+      # -----------------------------------------------------
+      # Verify Docker image
+      # -----------------------------------------------------
+
+      - name: Verify production server
+        run: |
+          docker run --rm ghcr.io/pandey11spsp/enhance-your-code:${{ github.sha }} \
+            sh -c "echo '=== CLOUDFLARE CHECK ===' && \
+            grep -i 'cloudflare-module\|cloudflare_module_default' .output/server/index.mjs && \
+            exit 1 || true"
+
+          echo "=== NODE SERVER CHECK ==="
+
+          timeout 10 docker run --rm \
+            ghcr.io/pandey11spsp/enhance-your-code:${{ github.sha }} \
+            node .output/server/index.mjs
