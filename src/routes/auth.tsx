@@ -59,8 +59,7 @@ function AuthPage() {
   const signIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const form = e.currentTarget;
-    const f = new FormData(form);
+    const f = new FormData(e.currentTarget);
     const email = String(f.get("email") ?? "").trim();
     const password = String(f.get("password") ?? "");
 
@@ -77,11 +76,8 @@ function AuthPage() {
       }
 
       localStorage.setItem("access_token", response.access_token);
-
       await refreshUser();
-
       toast.success("Signed in successfully.");
-
       nav({ to: "/dashboard" });
     } catch (error) {
       toast.error(
@@ -95,7 +91,8 @@ function AuthPage() {
   const signUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const f = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const f = new FormData(form);
 
     const fullName = String(f.get("full_name") ?? "").trim();
     const email = String(f.get("email") ?? "").trim();
@@ -123,23 +120,39 @@ function AuthPage() {
         email,
         password,
         role,
+        ...(role === "recruiter" && company ? { company } : {}),
       });
 
       if (!response.success) {
         throw new Error(response.message || "Registration failed.");
       }
 
-      if (role === "recruiter") {
+      form.reset();
+      setRole("candidate");
+
+      if (role === "candidate") {
+        try {
+          const loginResponse = await api.post<AuthResponse>("/login", {
+            email,
+            password,
+          });
+
+          if (!loginResponse.access_token) {
+            throw new Error(loginResponse.message || "Automatic sign-in failed.");
+          }
+
+          localStorage.setItem("access_token", loginResponse.access_token);
+          await refreshUser();
+          toast.success("Account created. Welcome to RecruitFlow!");
+          nav({ to: "/dashboard" });
+        } catch {
+          toast.success("Account created successfully. Please sign in to continue.");
+        }
+      } else {
         toast.success(
           "Account created. Your recruiter account is pending admin approval."
         );
-      } else {
-        toast.success("Account created. You can now sign in.");
       }
-
-      form.reset();
-
-      setRole("candidate");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to create account."
@@ -165,22 +178,12 @@ function AuthPage() {
               <form onSubmit={signIn} className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="e1">Email</Label>
-                  <Input
-                    id="e1"
-                    name="email"
-                    type="email"
-                    required
-                  />
+                  <Input id="e1" name="email" type="email" required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="p1">Password</Label>
-                  <Input
-                    id="p1"
-                    name="password"
-                    type="password"
-                    required
-                  />
+                  <Input id="p1" name="password" type="password" required />
                 </div>
 
                 <Button className="w-full" disabled={busy}>
@@ -210,34 +213,19 @@ function AuthPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="n">Full name</Label>
-                  <Input
-                    id="n"
-                    name="full_name"
-                    required
-                    maxLength={100}
-                  />
+                  <Input id="n" name="full_name" required maxLength={100} />
                 </div>
 
                 {role === "recruiter" && (
                   <div className="space-y-2">
                     <Label htmlFor="c">Company</Label>
-                    <Input
-                      id="c"
-                      name="company"
-                      required
-                      maxLength={100}
-                    />
+                    <Input id="c" name="company" required maxLength={100} />
                   </div>
                 )}
 
                 <div className="space-y-2">
                   <Label htmlFor="e2">Email</Label>
-                  <Input
-                    id="e2"
-                    name="email"
-                    type="email"
-                    required
-                  />
+                  <Input id="e2" name="email" type="email" required />
                 </div>
 
                 <div className="space-y-2">
@@ -253,8 +241,8 @@ function AuthPage() {
 
                 {role === "recruiter" && (
                   <p className="text-xs text-muted-foreground">
-                    Recruiter accounts need admin approval before posting
-                    jobs. Use your @recruitflow.com email.
+                    Recruiter accounts need admin approval before posting jobs.
+                    Use your @recruitflow.com email.
                   </p>
                 )}
 
