@@ -33,6 +33,8 @@ jobs:
         run: npm ci
 
       - name: Build application
+        env:
+          VITE_API_BASE_URL: http://35.209.25.146:8001
         run: npm run build
 
       - name: Set up Docker Buildx
@@ -53,8 +55,34 @@ jobs:
           push: false
           load: true
           no-cache: true
+          build-args: |
+            VITE_API_BASE_URL=http://35.209.25.146:8001
           tags: |
             enhance-your-code:test
+
+      - name: Verify API URL
+        run: |
+          echo "=== API URL CHECK ==="
+
+          if docker run --rm enhance-your-code:test \
+            sh -c "grep -R 'localhost:8001' .output 2>/dev/null"
+          then
+            echo "ERROR: localhost:8001 detected in production build."
+            exit 1
+          else
+            echo "NO localhost:8001 REFERENCES FOUND"
+          fi
+
+          echo "=== PRODUCTION API URL CHECK ==="
+
+          if docker run --rm enhance-your-code:test \
+            sh -c "grep -R '35.209.25.146:8001' .output 2>/dev/null"
+          then
+            echo "PRODUCTION API URL FOUND"
+          else
+            echo "ERROR: Production API URL was not found."
+            exit 1
+          fi
 
       - name: Verify production server
         run: |
@@ -97,6 +125,8 @@ jobs:
           context: .
           push: true
           no-cache: true
+          build-args: |
+            VITE_API_BASE_URL=http://35.209.25.146:8001
           tags: |
             ghcr.io/pandey11spsp/enhance-your-code:latest
             ghcr.io/pandey11spsp/enhance-your-code:${{ github.sha }}
