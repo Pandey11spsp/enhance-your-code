@@ -86,6 +86,7 @@ export function AuthProvider({
   const signOut = async () => {
     localStorage.removeItem("access_token");
     setUser(null);
+    window.location.assign("/");
   };
 
   const role = user?.role ?? null;

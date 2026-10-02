@@ -59,7 +59,8 @@ function AuthPage() {
   const signIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const f = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const f = new FormData(form);
     const email = String(f.get("email") ?? "").trim();
     const password = String(f.get("password") ?? "");
 
@@ -136,7 +137,7 @@ function AuthPage() {
         toast.success("Account created. You can now sign in.");
       }
 
-      e.currentTarget.reset();
+      form.reset();
 
       setRole("candidate");
     } catch (error) {
