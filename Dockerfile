@@ -6,6 +6,10 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Production API URL supplied by GitHub Actions
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Copy dependency files first for better Docker layer caching
 COPY package.json package-lock.json ./
 
